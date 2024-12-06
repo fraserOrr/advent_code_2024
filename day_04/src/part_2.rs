@@ -64,7 +64,7 @@ fn main() -> Result<(),Box<dyn std::error::Error>>{
             }
 
             if count>=2{
-                println!("count of found: {}", count);
+                //println!("count of found: {}", count);
                 output+=1;
             }
         } 
