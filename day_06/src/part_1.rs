@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 fn main() -> Result<(),Box<dyn std::error::Error>>{
    
-    let file1 = File::open("input.txt")?;
+    let file1 = File::open("test_input.txt")?;
     let buf_reader = BufReader::new(file1);
     let mut y_container: Vec<Vec<char>> = Vec::new();
     let mut blocker: Vec<(usize,usize)> = Vec::new();
@@ -131,6 +131,7 @@ fn main() -> Result<(),Box<dyn std::error::Error>>{
     }
 
     println!("number of squares visited: {}", been_keeper.len());
+    
     
     Ok(())
 
