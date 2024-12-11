@@ -14,8 +14,10 @@ path="src/part_1.rs"
 name="part_2"
 path="src/part_2.rs"
 
+[[bin]]
+name="part_3"
+path="src/part_3.rs"
 
 [dependencies]
-cached = "0.54.0"
-fn-cache = "2.0.0"
+memoize = "0.4.2"
 
