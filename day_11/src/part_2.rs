@@ -39,6 +39,8 @@ fn do_stone(stone: u64, count: usize,answer_cache: &mut HashMap<(u64, usize), u6
         return 1;
     }
     let key = (stone, count);
+
+    //this is handy
     if let Some(answer_cache)= answer_cache.get(&key){
         return *answer_cache;
     }
@@ -54,12 +56,8 @@ fn do_stone(stone: u64, count: usize,answer_cache: &mut HashMap<(u64, usize), u6
     }
     let res = do_stone(stone * 2024, count -1, answer_cache);
     answer_cache.insert(key, res);
-    res
+    return  res;
 
     
     
 }
-
-
-
-

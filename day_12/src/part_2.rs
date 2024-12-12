@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::panic::resume_unwind;
 
 #[derive(Debug, Clone)]
 struct Region{
@@ -84,57 +85,170 @@ impl RegionContainer {
         
     }
     fn periminter_to_edges(points: &Vec<(u64,u64)>)->usize{
-        //let mut perimeter_hash: HashMap<(u64,u64), usize> = HashMap::new();
-        let mut edge_hash: HashMap<(u64,u64), usize> = HashMap::new();
         let mut points = points.clone();
-        points.iter_mut().for_each(|point|{ point.0+=4;point.1+=4});
-        let mut x_high: u64 = 0;
-        let mut y_high: u64 = 0;
-        for point in points.iter(){
-            //perimeter_hash.insert(point.clone(), 4);
-            
-            edge_hash.insert(point.clone(), 0);
+        points.iter_mut().for_each(|f| {f.0+=5;f.1+=5;});
+        let out_eddges=RegionContainer::outedge(&points);
+        let mut region_holder:RegionContainer =RegionContainer { region_contrainer: vec![] };
+        
+        for y in 0..140{
+            for x in 0..140{
+                if points.contains(&(y,x))==false{
+                    
+                    let tmp: Region = Region { letter: '.', points: vec![(y as u64,x as u64)] };
+                    region_holder.region_contrainer.push(tmp);
 
-            if point.0 > y_high {
-                y_high = point.0
-            }
-
-            if point.1 > x_high {
-                x_high = point.1
-            }
-        }
-        let mut test_points:  Vec<(u64,u64)>= Vec::new();
-        for y in 0..y_high+1{
-            for x in 0..x_high+1{
-                if  edge_hash.contains_key(&(y,x))==false{
-                    test_points.push((y,x));
-                }
-                
-            }
-        }
-
-        for test_point in test_points.iter(){
-            for i in 0..points.len(){
-                
-                if RegionContainer::are_points_related(&points[i], &test_point)==true {
-                    let tmp_ref =edge_hash.get_mut(&points[i]).unwrap();
-                    *tmp_ref+=1;
+                    
                     
                 }
-                
             }
+        }
+        region_holder.sort_region();
+        region_holder.region_contrainer.pop();
+        println!("sub regions found {}",region_holder.region_contrainer.len());
+        let mut count: usize =0;
+        if region_holder.region_contrainer.len()>0{
+          count = region_holder.return_total_answer();  
         }
         
 
+        return out_eddges+count;
+    }
+
+    fn outedge(points: &Vec<(u64,u64)>)->usize{
+
+       
+        let mut curr_point: (u64,u64) = points[0];
+        let mut direction: &str = "U";
         
-        return edge_hash.into_values().sum();
+        let start_dir = direction.clone();
+        let mut turns:usize =0;
+        
+        loop {
+            curr_point = (curr_point.0,curr_point.1-1);
+            if points.contains(&curr_point)==false{
+                break;
+            }
+        }
+        let starting_point = curr_point.clone();
+        loop {
+            
+    
+            if RegionContainer::check_impass(curr_point,RegionContainer::get_right(direction), &points)==true{
+                //do we have a wall to our right 
+                //if we do can we go foward
+                if RegionContainer::check_impass(curr_point, direction, &points)==false{
+                    curr_point=RegionContainer::walk_forward(curr_point, direction);
+                }else{
+                    //cant go forward and we have a wall to the right so turn left
+                    //check to see if we can jump diagnol right
+                    direction=RegionContainer::get_left(direction);
+                    turns+=1;
+                }
+            }else{
+                //if no turn right and move
+                direction=RegionContainer::get_right(direction);
+                curr_point=RegionContainer::walk_forward(curr_point, direction);
+                turns+=1;
+
+            }
+
+            
+
+
+
+            if curr_point==starting_point && start_dir==direction{
+                break;
+            }
+        }
+        
+        //we need to check all the internal shapes too. 
+
+
+
+
+        return turns
+    }
+    fn check_impass(point:(u64,u64), direction: &str,points: &Vec<(u64,u64)>)->bool {
+        if direction=="U"{
+
+            if points.contains(&(point.0-1,point.1))==true{
+                return true;
+            }else {
+                return false;
+            }
+        }else if direction =="R"{
+            if points.contains(&(point.0,point.1+1))==true{
+                return true;
+            }else {
+                return false;
+            }
+        }else if direction =="D"{
+            if points.contains(&(point.0+1,point.1))==true{
+                return true;
+            }else {
+                return false;
+            }
+        }else if direction =="L"{
+            if points.contains(&(point.0,point.1-1))==true{
+                return true;
+            }else {
+                return false;
+            };
+            
+
+        }else {
+            panic!("bad dir");
+        };
+    }
+
+    fn walk_forward(point:(u64,u64), direction: &str)->(u64,u64){
+
+        if direction=="U"{
+            return (point.0-1,point.1);
+        }else if direction =="R"{
+            return (point.0,point.1+1);
+        }else if direction =="D"{
+            return (point.0+1,point.1);
+        }else if direction =="L"{
+            return (point.0,point.1-1);
+        }else {
+            panic!("bad dir");
+        };
+    }
+
+    fn get_left( direction: &str)->&str{
+        if direction=="U"{
+            return "L";
+        }else if direction =="R"{
+            return "U";
+        }else if direction =="D"{
+            return "R";
+        }else if direction =="L"{
+            return "D";
+        }else {
+            panic!("bad dir");
+        };
+    }
+
+    fn get_right( direction: &str)->&str{
+        if direction=="U"{
+            return "R";
+        }else if direction =="R"{
+            return "D";
+        }else if direction =="D"{
+            return "L";
+        }else if direction =="L"{
+            return "U";
+        }else {
+            panic!("bad dir");
+        };
     }
     
 }
 
 fn main() -> Result<(),Box<dyn std::error::Error>>{
    
-    let file1 = File::open("test_input.txt")?;
+    let file1 = File::open("input.txt")?;
     let buf_reader = BufReader::new(file1);
     let mut region_holder:RegionContainer =RegionContainer { region_contrainer: vec![] };
 
