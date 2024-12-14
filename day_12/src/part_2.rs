@@ -75,7 +75,9 @@ impl RegionContainer {
             if area==1{
                 edges=4;
             }else{
-                edges=RegionContainer::periminter_to_edges(&x.points);
+                //create mutable copy
+                let mut points = x.points.clone();
+                edges=RegionContainer::periminter_to_edges(points);
             }
 
             println!("shape {} has area {} and edge {}",x.letter.to_string(),area,edges);
@@ -84,45 +86,96 @@ impl RegionContainer {
 
         
     }
-    fn periminter_to_edges(points: &Vec<(u64,u64)>)->usize{
+    fn return_total_edge(&mut self)->usize{
+
+        return self.region_contrainer.iter().map(|x|{
+            let area: usize =x.points.len();
+            let mut edges: usize=0;
+            if area==1{
+                edges=4;
+            }else{
+                //create mutable copy
+                let mut points = x.points.clone();
+                edges=RegionContainer::periminter_to_edges(points);
+            }
+
+            //println!("shape {} has area {} and edge {}",x.letter.to_string(),area,edges);
+            return  edges;
+        }).sum::<usize>();
+
+        
+    }
+    fn periminter_to_edges(points: Vec<(u64,u64)>)->usize{
         let mut points = points.clone();
         points.iter_mut().for_each(|f| {f.0+=5;f.1+=5;});
-        let out_eddges=RegionContainer::outedge(&points);
-        let mut region_holder:RegionContainer =RegionContainer { region_contrainer: vec![] };
-        
-        for y in 0..140{
-            for x in 0..140{
-                if points.contains(&(y,x))==false{
-                    
-                    let tmp: Region = Region { letter: '.', points: vec![(y as u64,x as u64)] };
-                    region_holder.region_contrainer.push(tmp);
+        let  (mut out_eddges,mut points_been)=RegionContainer::outedge(&mut points);
+        //println!("out edged: {}", out_eddges);
+        // how can we work out if the internal block space
+        let mut y_lower: u64 =150;
+        let mut y_higher: u64 =0;
+        let mut x_lower: u64 =150;
+        let mut x_higher: u64 =0;
 
-                    
-                    
-                }
+        for point in points.iter(){
+            if point.0 < y_lower{
+                y_lower=point.0
+            }
+            if point.0 > y_higher{
+                y_higher=point.0
+            }
+            if point.1 < x_lower{
+                x_lower=point.1
+            }
+            if point.1 > x_higher{
+               x_higher=point.1
             }
         }
-        region_holder.sort_region();
-        region_holder.region_contrainer.pop();
-        println!("sub regions found {}",region_holder.region_contrainer.len());
-        let mut count: usize =0;
-        if region_holder.region_contrainer.len()>0{
-          count = region_holder.return_total_answer();  
-        }
-        
+        let mut region_holder2:RegionContainer =RegionContainer { region_contrainer: vec![] };
 
-        return out_eddges+count;
+
+
+        for y in y_lower-15..y_higher+15{
+            for x in x_lower-15..x_higher+15{
+                if points.contains(&(y,x))==false{
+                    let tmp: Region = Region { letter: '#', points: vec![(y as u64,x as u64)] };
+                    region_holder2.region_contrainer.push(tmp);
+                }
+                
+            }
+        }
+        region_holder2.sort_region();
+        region_holder2.region_contrainer.pop();
+
+        if region_holder2.region_contrainer.len()>0{
+            //println!("found sub region {}", region_holder2.region_contrainer.len());
+            
+            //whats left
+    
+            //println!("{:?}", region_holder2);
+            //work out result  
+            let extra_bit = region_holder2.return_total_edge();
+           // println!("adding on extra {}", extra_bit);
+            out_eddges+=extra_bit
+        }
+
+        return out_eddges;
+
+
     }
 
-    fn outedge(points: &Vec<(u64,u64)>)->usize{
+    fn outedge(points: &mut Vec<(u64,u64)>)->(usize,Vec<(u64,u64)>){
 
-       
+        points.sort();
         let mut curr_point: (u64,u64) = points[0];
         let mut direction: &str = "U";
         
         let start_dir = direction.clone();
         let mut turns:usize =0;
-        
+        let mut points_been: Vec<(u64,u64)> = Vec::new();
+
+
+
+
         loop {
             curr_point = (curr_point.0,curr_point.1-1);
             if points.contains(&curr_point)==false{
@@ -133,14 +186,14 @@ impl RegionContainer {
         loop {
             
     
-            if RegionContainer::check_impass(curr_point,RegionContainer::get_right(direction), &points)==true{
+            if RegionContainer::check_impass(curr_point,RegionContainer::get_right(direction), &points, &mut points_been)==true{
                 //do we have a wall to our right 
                 //if we do can we go foward
-                if RegionContainer::check_impass(curr_point, direction, &points)==false{
+                if RegionContainer::check_impass(curr_point, direction, &points, &mut points_been)==false{
                     curr_point=RegionContainer::walk_forward(curr_point, direction);
                 }else{
                     //cant go forward and we have a wall to the right so turn left
-                    //check to see if we can jump diagnol right
+                    
                     direction=RegionContainer::get_left(direction);
                     turns+=1;
                 }
@@ -161,35 +214,37 @@ impl RegionContainer {
             }
         }
         
-        //we need to check all the internal shapes too. 
 
 
 
-
-        return turns
+        return (turns,points_been)
     }
-    fn check_impass(point:(u64,u64), direction: &str,points: &Vec<(u64,u64)>)->bool {
+    fn check_impass(point:(u64,u64), direction: &str,points: &Vec<(u64,u64)>,points_been: &mut Vec<(u64,u64)>)->bool {
         if direction=="U"{
 
             if points.contains(&(point.0-1,point.1))==true{
+                points_been.push((point.0-1,point.1));
                 return true;
             }else {
                 return false;
             }
         }else if direction =="R"{
             if points.contains(&(point.0,point.1+1))==true{
+                points_been.push((point.0,point.1+1));
                 return true;
             }else {
                 return false;
             }
         }else if direction =="D"{
             if points.contains(&(point.0+1,point.1))==true{
+                points_been.push((point.0+1,point.1));
                 return true;
             }else {
                 return false;
             }
         }else if direction =="L"{
             if points.contains(&(point.0,point.1-1))==true{
+                points_been.push((point.0,point.1-1));
                 return true;
             }else {
                 return false;
