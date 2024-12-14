@@ -14,4 +14,3 @@ path="src/part_1.rs"
 [[bin]]
 name="part_2"
 path="src/part_2.rs"
-

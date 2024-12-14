@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::collections::HashMap;
+
 use regex::Regex;
 
 #[derive(Clone, Debug)]
@@ -14,12 +15,6 @@ struct Machine{
 
 }
 #[derive(Clone, Debug)]
-struct GameTick{
-    position: (u64,u64),
-    counter: i32,
-    cost: u64,
-}
-#[derive(Clone, Debug)]
 struct MachineHolder{
     machine_list: Vec<Machine>
 }
@@ -27,7 +22,7 @@ struct MachineHolder{
 impl MachineHolder {
 
     fn work_out_computation(&mut self)->u64{
-        let mut container: &mut Vec<Machine> = &mut self.machine_list;
+        let container: &mut Vec<Machine> = &mut self.machine_list;
         let mut tokens: u64= 0;
         container.iter_mut().for_each(|machine: &mut Machine| {
             println!("starting machine {:?}", machine.goal);
@@ -38,61 +33,60 @@ impl MachineHolder {
     }
     
     fn machine_lowest_cost(machine: &mut Machine)->u64{
-        let mut outputs: Vec<GameTick>=Vec::new();
-        let firsttick: GameTick = GameTick { position: (0,0), counter: 0 , cost: 0};
-        outputs.push(firsttick);
+        let mut outputs: HashMap<(u64,u64),u64> =HashMap::new();
+        let mut tmp_outputs: HashMap<(u64,u64),u64> =HashMap::new();
+        outputs.insert((0,0), 0);
 
-        for i in 1..100{
-            println!("round: {}, contain len: {}", i, outputs.len());
-            let mut tmp_container: Vec<GameTick>=Vec::new();
-            for last_tick in outputs.iter(){
-                if last_tick.position>machine.goal{
-                    break;
-                }else if last_tick.counter==i-1{
-                    //try button A
-                    let new_tick_1: GameTick=GameTick { position: (last_tick.position.0 + machine.btnn_a.0,last_tick.position.1 + machine.btnn_a.1), counter: last_tick.counter+1 , cost: last_tick.cost+3};
-                    //try button B
-                    let new_tick_2: GameTick=GameTick { position: (last_tick.position.0 + machine.bttn_b.0,last_tick.position.1 + machine.bttn_b.1), counter: last_tick.counter+1 , cost: last_tick.cost+1};
-                    tmp_container.push(new_tick_1.clone());
-                    tmp_container.push(new_tick_2.clone());
+        
+        for i in 0..200{
+            //println!("round: {}, contain len: {}", i, outputs.len());
+
+            for position in outputs.iter_mut(){
+
+                let new_pos_1: (u64,u64) = ( position.0.0 + machine.btnn_a.0, position.0.1 + machine.btnn_a.1);
+                //println!("button a: {:?}", new_pos_1);
+                tmp_outputs.insert(new_pos_1, *position.1+3);
+
+                let new_pos_2:  (u64,u64) = ( position.0.0 + machine.bttn_b.0, position.0.1 + machine.bttn_b.1);
+                //println!("button b: {:?}", new_pos_2);
+                tmp_outputs.insert(new_pos_2, *position.1+1);
+
+                
+
+            }
+
+            for tmp in tmp_outputs.drain(){
+                if outputs.contains_key(&tmp.0) ==false{
+                    outputs.insert(tmp.0, tmp.1);   
+                }else if outputs.get(&tmp.0).unwrap()>&tmp.1{
+                    println!("found quicker way to goal");
+                    outputs.insert(tmp.0, tmp.1);
+                    
                 }
             }
-
-            for item in tmp_container.drain(..){
-                outputs.push(item);
-            }
-            outputs.retain(|f|{
-                if f.counter<i-1 && f.position!=machine.goal {
-                    return false;
-                }else{
-                    return  true;
-                }
-
-            });
-
         }
-        let mut possible_tokens: Vec<u64> = Vec::new();
-        for gametick in outputs.iter(){
-            if gametick.position == machine.goal{
-                possible_tokens.push(gametick.cost);
+        let mut matched_goal: Vec<u64>= Vec::new();        
+        for item in outputs.drain(){
+            if item.0 == machine.goal{
+                matched_goal.push(item.1);
             }
-        }
-        possible_tokens.sort();
-        println!("possible tokens: {:?}", possible_tokens);
-        if possible_tokens.len()==0{
-            println!("machine: {:?} needs lowest token {}", machine.goal, 0);
-            return 0;
-        }else{
-            println!("machine: {:?} needs lowest token {}", machine.goal, possible_tokens[0]);
-            return possible_tokens[0];
         }
         
+        if matched_goal.len()>0{
+            matched_goal.sort();
+            println!("{:?}", matched_goal);
+            println!("matched machine {:?} with tokens {}", machine.goal, matched_goal[0]);
+            return  matched_goal[0];
+        }else{
+            println!("no matches for machine {:?}", machine.goal);
+            return 0;
+        }
     }
 
 }
 fn main() -> Result<(),Box<dyn std::error::Error>>{
    
-    let file1 = File::open("test_input.txt")?;
+    let file1 = File::open("input.txt")?;
     let buf_reader = BufReader::new(file1);
     let mut line_count = 0;
     let mut bttnA: (u64,u64) = (0,0);
@@ -152,7 +146,7 @@ fn main() -> Result<(),Box<dyn std::error::Error>>{
 
     
     let output: u64 = machine_container.work_out_computation();
-    println!("{:?}", machine_container);
+    //println!("{:?}", machine_container);
 
 
     println!("done : {}", output);
