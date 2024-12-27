@@ -27,11 +27,53 @@ impl Map {
             //find new position
 
             robot.position= ( robot.position.0+robot.velocity.0 ,robot.position.1+robot.velocity.1);
-            if robot.
+            if robot.position.0 >= self.width {
+                robot.position.0 = robot.position.0 - self.width
+            }
+            if robot.position.0 < 0 {
+                robot.position.0 = robot.position.0 + self.width
+            }
+            if robot.position.1 >= self.height{
+                robot.position.1 = robot.position.1 - self.height
+            }
+            if robot.position.1 < 0 {
+                robot.position.1 = robot.position.1 + self.height
+            }
+
 
         });
     }
 
+    fn find_score(&mut self)->u64{
+
+        let mut count_1: u64 =0;
+        let mut count_2: u64 =0;
+        let mut count_3: u64 =0;
+        let mut count_4: u64 =0;
+
+        println!("middle is {},{}",((self.width)/2),((self.height )/2));
+        for cur_robot in self.robots.iter(){
+            
+            if cur_robot.position.0 < ((self.width)/2) && cur_robot.position.1 < ((self.height )/2){
+                //quad 1 
+                count_1+=1;
+            }else if cur_robot.position.0 < ((self.width)/2) && cur_robot.position.1 > ((self.height)/2){
+                //quad 2 
+                count_2+=1;
+
+            }else if cur_robot.position.0 > ((self.width)/2) && cur_robot.position.1 < ((self.height )/2){
+                //quad 3 
+                count_3+=1;
+
+            }else if cur_robot.position.0 > ((self.width)/2) && cur_robot.position.1 > ((self.height )/2){
+                //quad 4 
+                count_4+=1;
+            }
+        }
+
+        println!("quad 1: {}, quad 2: {}, quad 3: {}, quad 4: {}", count_1,count_2,count_3,count_4);
+        return count_1*count_2*count_3*count_4;
+    }
     fn print_board(&mut self){
         for y in 0..self.height{
             for x in 0..self.width{
@@ -59,13 +101,12 @@ impl Map {
 
 fn main() -> Result<(),Box<dyn std::error::Error>>{
    
-    let file1 = File::open("test_input.txt")?;
+    let file1 = File::open("input.txt")?;
     let buf_reader = BufReader::new(file1);
-    let output: i64 = 0;
     let corrd_regex: Regex =  Regex::new(r"[-]?\d{1,5},[-]?\d{1,5}").unwrap();
 
-    let width: i64 = 11;
-    let height: i64 =7;
+    let width: i64 = 101;
+    let height: i64 =103;
 
 
     let mut game: Map = Map { robots: vec![] ,width: width, height:height};
@@ -91,9 +132,18 @@ fn main() -> Result<(),Box<dyn std::error::Error>>{
     
     println!("{:?}", game);
     game.print_board();
+    println!("");
 
-    println!("done : {}", output);
+    for i in 0..100{
+        println!("{}",i);
+        game.game_tick();
+        game.print_board();    
+    }
+    println!("{:?}", game);
+    game.print_board();
+    println!("done : {}", game.find_score());
     
+
     
     Ok(())
 
